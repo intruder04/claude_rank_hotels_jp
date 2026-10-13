@@ -3,7 +3,10 @@
 around each hotel using OpenStreetMap's Overpass API, and write them into data.json.
 
 Usage:
-    python3 osm_counts.py data.json
+    python3 osm_counts.py data.json [--force]
+
+Saves after every hotel, and skips hotels that already have counts, so if the servers
+are busy you can just run it again to fill in the rest (--force recounts everything).
 
 Only hotel coordinates are sent (public places, no personal data). Overpass is a free,
 shared service: the script goes slowly, retries on 429/504 and switches mirrors, and
@@ -28,13 +31,14 @@ def query(la, lo):
             req = urllib.request.Request(ep, data=data, headers={"User-Agent": "japan-hotel-comparison/1.0"})
             return json.load(urllib.request.urlopen(req, timeout=90))
         except Exception as e:
-            print("  retry", attempt + 1, e, file=sys.stderr); time.sleep(10 + 5 * attempt)
+            print("  retry", attempt + 1, e, file=sys.stderr, flush=True); time.sleep(10 + 5 * attempt)
     return None
 
 def main():
     path = pathlib.Path(sys.argv[1]); d = json.loads(path.read_text())
     for h in d["hotels"]:
         if h.get("lat") is None: continue
+        if h.get("food") is not None and "--force" not in sys.argv: continue
         j = query(h["lat"], h["lon"])
         if j is None:
             print(h["name"], "FAILED — left blank"); continue
@@ -42,8 +46,8 @@ def main():
         h.update(food=c[0], shops=c[1], konbini=c[2], supermarkets=c[3])
         malls = sorted({e["tags"].get("name:en") or e["tags"].get("name") for e in els if e["type"] != "count"} - {None})
         if malls and not h.get("big_shopping"): h["big_shopping"] = ", ".join(malls[:6])
+        path.write_text(json.dumps(d, ensure_ascii=False, indent=1))
         print(h["name"], c, flush=True); time.sleep(6)
-    path.write_text(json.dumps(d, ensure_ascii=False, indent=1))
 
 if __name__ == "__main__":
     main()

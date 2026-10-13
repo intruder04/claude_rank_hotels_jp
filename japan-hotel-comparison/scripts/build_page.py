@@ -115,7 +115,8 @@ def verdict_row(h):
     if h.get("total_usd") is None and h.get("score_price_usd") is None: brk += " · price unknown → half points"
     lab = ("🏆 Highest overall score · " if h["rank"] == 1 else "") + h.get("verdict_label", "")
     btn = {"booked": ("View 🔗", " alt"), "unavailable": ("Check 🔗", " alt")}.get(h["status"], ("Book 🔗", ""))
-    room = f'{h.get("twin_ft2","?")} ft² · {"🛁" if h.get("bath") else "🚿"} · {price}'
+    size = f'{h["twin_ft2"]} ft²' if h.get("twin_ft2") is not None else "size not listed"
+    room = f'{size} · {"🛁" if h.get("bath") else "🚿"} · {price}'
     return (f'<tr{cls}><td class="rank">{h.get("rank","")}</td>{name_cell(h, True)}'
             + cell(h, "overall", "max", f'🏅 {h["overall"]:g}', brk) +
             f'<td><strong>{esc(lab)}</strong><span class="sub">{esc(h.get("verdict_text",""))}</span></td>'
@@ -125,7 +126,7 @@ t_verdict = "\n".join(verdict_row(h) for h in H)
 
 t_facts = group_rows(lambda h: "<tr>" + name_cell(h)
     + cell(h, "rating", "max", f'⭐ {h.get("rating")}', f'{h.get("review_count",0):,} reviews')
-    + cell(h, "twin_ft2", "max", f'{h.get("twin_ft2")} ft²', f'{esc(h.get("room_name",""))} · {round((h.get("twin_ft2") or 0)*0.0929)} m²')
+    + cell(h, "twin_ft2", "max", f'{h.get("twin_ft2")} ft²', f'{esc(h.get("room_name",""))} · {round((h.get("twin_ft2") or 0)*0.0929)} m²' if h.get("twin_ft2") is not None else f'{esc(h.get("room_name",""))} · size not listed')
     + bath_cell(h) + price_cell(h) + heat_cell(h) + "</tr>")
 
 t_access = group_rows(lambda h: "<tr>" + name_cell(h)
