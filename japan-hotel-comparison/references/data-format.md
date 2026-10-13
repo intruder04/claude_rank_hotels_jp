@@ -23,6 +23,7 @@ be left out, and the page shows "—" for it.
   "places": [{"name": "Dotonbori", "lat": 34.6687, "lon": 135.5013}],   // optional; destinations, drawn as ◆ on the map
   "basemap": { ... },                                // written by scripts/fetch_basemap.py (zoom + tile files)
   "hotels": [ { ...hotel... } ],
+  "restaurant_source": "tabelog",     // "tabelog" (default) or "google": which site the top_restaurants picks came from
   "ruled_out": [ {"name": "Tokyo Prince Hotel (8.5)", "reason": "🌡️ ...short quote..."} ],
   "notes": ["Extra footnote lines"]
 }
@@ -56,7 +57,7 @@ be left out, and the page shows "—" for it.
 | `train`, `taxi` | `[27,17,40]`, `[20,21,31]` | minutes, one per destination |
 | `train_note` | `["","","walk"]` | `"walk"` shows 🚶 instead of 🚆 |
 | `food`, `shops`, `konbini`, `supermarkets` | `117, 57, 22, 4` | filled by `scripts/osm_counts.py` |
-| `big_shopping`, `top_restaurants` | `"Tamachi station shops"`, `"KASA 4.2 · …"` | |
+| `big_shopping`, `top_restaurants` | `"Tamachi station shops"`, `"Hashimoto Ya 4.03 (Curry) · …"` | top 3 restaurants, Tabelog score (or Google rating if Tabelog failed) |
 | `pros`, `cons` | short phrases | from reviews |
 
 ## Computed by the script

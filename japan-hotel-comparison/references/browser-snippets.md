@@ -174,6 +174,45 @@ showing as 10 min when the south gate was about 5 min away.
 
 ## 6. Top-rated restaurants near a point
 
+**Tabelog first** (Japan's main restaurant review site; its English site loaded with no
+bot check in Oct 2026). Use Google Maps only if Tabelog shows a bot check or fails.
+If Tabelog ever shows a Cloudflare/CAPTCHA page, don't try to get past it: switch to Google.
+
+1. Find the station page code. Run this on any `https://tabelog.com/en/` page; it maps
+   every station in a city to its list URL (Osaka is `osaka/A2701`; for Tokyo use
+   `tokyo/A1301`…`A1331`, etc. Read the area links on `/en/<pref>/` first):
+```js
+const get=async u=>new DOMParser().parseFromString(await (await fetch(u)).text(),'text/html');
+const top=await get('/en/osaka/A2701/rstLst/');
+const areas=[...new Set([...top.querySelectorAll('a')].map(a=>(a.getAttribute('href')||'').match(/\/en\/osaka\/A2701\/(A\d{6})\/$/)?.[1]).filter(Boolean))];
+window.__S={}; for(const c of areas){const d=await get('/en/osaka/A2701/'+c+'/rstLst/'); [...d.querySelectorAll('a')].forEach(x=>{const h=(x.getAttribute('href')||'').split('?')[0]; if(/\/R\d+\/rstLst\/?$/.test(h)&&/Sta\./.test(x.innerText)) window.__S[x.innerText.trim()]=h.replace(/rstLst\/?$/,'');});}
+Object.keys(window.__S).length
+```
+2. For each hotel, fetch 8 pages of that station's list sorted by rating and keep
+   everyday restaurants: nearest station is that station, ≤500 m, 50+ reviews, dinner
+   ≤ ¥6,000, no bars, cafés (Kissa) or dessert shops. Fire it off and poll, because the
+   browser tool times out after ~45 s:
+```js
+window.__done=false; (async()=>{ const u='/en/osaka/A2701/A270106/R9135/', sn='Hommachi';
+ const yen=s=>{const m=(s||'').match(/JPY ([\d,]+)/); return m?+m[1].replace(/,/g,''):null};
+ const BAD=/^(Bar|Cafe|Kissa|Stand-up bar|Cake|Japanese traditional sweets|Gelato|Patisserie|Bakery|Bread|Ice cream|Sweets|Coffee|Tea|Dining bar|Wine bar|Chocolate|Donut|Pancake|Crepe)/i;
+ const pages=await Promise.all([1,2,3,4,5,6,7,8].map(p=>fetch(u+'rstLst/'+(p>1?p+'/':'')+'?SrtT=rt').then(r=>r.text())));
+ const all=pages.flatMap(h=>[...new DOMParser().parseFromString(h,'text/html').querySelectorAll('.list-rst')].map(e=>{
+   const v=[...e.querySelectorAll('.c-rating-v3__val')].map(x=>x.textContent.trim());
+   const ag=((e.querySelector('.list-rst__area-genre')||{}).textContent||'').trim(), dm=ag.match(/^(.*?) Sta\.\s*([\d,]+)\s*m/);
+   return {n:e.querySelector('.list-rst__rst-name-target')?.textContent.trim().replace(/\s+/g,' '), r:parseFloat(e.querySelector('.c-rating__val')?.textContent),
+     c:parseInt((e.querySelector('.list-rst__rvw-count-num')?.textContent||'0').replace(/,/g,'')), st:dm?dm[1].trim():'', dist:dm?+dm[2].replace(/,/g,''):9999,
+     price:yen(v[0])??yen(v[1]), g:ag.split('/').slice(1).join('/').trim().split(',')[0].trim()};}));
+ window.__out=all.filter(x=>x.r&&x.c>=50&&x.st===sn&&x.dist<=500&&x.price!=null&&x.price<=6000&&!BAD.test(x.g)).sort((a,b)=>b.r-a.r).slice(0,3)
+   .map(x=>`${x.n} ${x.r.toFixed(2)} (${x.g.replace(/ \(.*\)/,'')})`).join(' · ');
+ window.__done=true;})(); 'started'
+// then: for(let i=0;i<8&&!window.__done;i++) await new Promise(r=>setTimeout(r,5000)); window.__out
+```
+   Pages are cached per station, so hotels sharing a station share picks. That's fine,
+   but say so. Tabelog scores run lower than Google's (3.5+ is very good, 4.0+ is
+   exceptional). Keep `"restaurant_source": "tabelog"` in data.json so the page says so.
+
+**Google Maps fallback** (set `"restaurant_source": "google"`):
 ```
 https://www.google.com/maps/search/restaurants/@<lat>,<lon>,17z?hl=en
 ```
@@ -182,3 +221,5 @@ https://www.google.com/maps/search/restaurants/@<lat>,<lon>,17z?hl=en
 ```
 The list only loads ~20 places, so don't use its length as a count. Use it only
 for "top picks". If it comes back empty, retry once with `restaurants+near+<Station>`.
+After many searches Google shows "a limited view of Google Maps" and returns 1 result;
+stop using it then rather than retrying.

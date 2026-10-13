@@ -11,7 +11,7 @@ miss when booking in Japan:
 - 🛏️ **Real twin room size** in ft² and m², and whether there's a 🛁 **bathtub**. It checks the room's facility data *and* the room photos, because listings often miss the tub.
 - 🚉 **Walk to the nearest JR station**, plus the main subway when there's no JR nearby, and how to get from the Shinkansen to the hotel.
 - 🚆🚕 **Train and taxi times** to the places you'll actually go, added up into a travel score.
-- 🍜 **Restaurants, shops and konbini** within a 6-minute walk (OpenStreetMap), plus top-rated restaurants nearby (Google Maps).
+- 🍜 **Restaurants, shops and konbini** within a 6-minute walk (OpenStreetMap), plus the top-rated everyday restaurants nearby (Tabelog first, Google Maps as a fallback).
 - 💰 **Real total price** with Japan's 10% consumption tax, compared against your budget.
 - ⭐ **Booking.com review scores**, with a short pros/cons summary.
 - 🏅 **Overall score (0–100)** that ranks every hotel the same way, including ones you've already booked.
@@ -36,7 +36,7 @@ When you ask Claude to compare or find hotels in Japan, the skill first asks:
 3. The places you'll visit most, and how you arrive (e.g. Shinkansen from Osaka)
 4. Areas to avoid, and priorities: JR walking distance, heating and AC, bathtub, minimum rating
 
-Then it researches with a browser (Booking.com + Google Maps), scores the hotels and publishes the page.
+Then it researches with a browser (Booking.com, Google Maps and Tabelog), scores the hotels and publishes the page.
 It works **only for hotels in Japan**.
 
 ## Install
@@ -59,7 +59,7 @@ Then just ask, for example:
 
 ### Requirements
 
-- A Claude environment with **browser access** (Claude in Chrome, the desktop app's built-in browser, or similar). The research happens on Booking.com and Google Maps.
+- A Claude environment with **browser access** (Claude in Chrome, the desktop app's built-in browser, or similar). The research happens on Booking.com, Google Maps and Tabelog.
 - **Python 3** for the helper scripts: page builder, OpenStreetMap counter and map downloader. They use only the standard library.
 
 ## What's inside
@@ -68,7 +68,7 @@ Then just ask, for example:
 japan-hotel-comparison/
 ├── SKILL.md                     # the workflow Claude follows
 ├── references/
-│   ├── browser-snippets.md      # tested JavaScript for Booking.com search, reviews, bathtubs, Google Maps
+│   ├── browser-snippets.md      # tested JavaScript for Booking.com search, reviews, bathtubs, Google Maps, Tabelog
 │   └── data-format.md           # the data.json format the page builder reads
 ├── scripts/
 │   ├── build_page.py            # data.json → comparison page (HTML)
@@ -100,7 +100,7 @@ Hotels that fail the winter-heat check are removed before scoring. Change the we
 - **Search coverage:** Booking.com limits search results, so a city-wide search can miss a few hotels.
 - **Changing data:** prices, availability and reviews change all the time. The page shows when the data was collected.
 - **Approximate counts:** OpenStreetMap restaurant and shop counts are approximate. The skill also checks that the nearest konbini is a short walk.
-- **No CAPTCHAs:** the skill won't try to get past bot checks. For example, Tabelog's Cloudflare check loops in automated browsers, so Tabelog isn't used.
+- **No CAPTCHAs:** the skill won't try to get past bot checks. If Tabelog shows one, it uses Google Maps for restaurants instead.
 - **Your own photos only:** hotel photos come from Booking.com listings and are only downloaded for your own page.
 
 ## License

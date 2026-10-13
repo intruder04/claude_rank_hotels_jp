@@ -588,5 +588,6 @@
  "notes": [
   "Example data from a real search in October 2026. Prices, availability and reviews change: run the skill for your own dates."
  ],
- "intro": "Example output from a real Tokyo search: 2 adults, twin room, 5 nights in December, budget $1,200. Prices and availability are illustrative and will have changed."
+ "intro": "Example output from a real Tokyo search: 2 adults, twin room, 5 nights in December, budget $1,200. Prices and availability are illustrative and will have changed.",
+ "restaurant_source": "google"
 }

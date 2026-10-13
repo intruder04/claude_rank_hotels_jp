@@ -123,6 +123,8 @@ def verdict_row(h):
             f'<td><span class="num">⭐ {h.get("rating","")}</span><span class="sub">{room}</span></td>'
             f'<td><a class="book{btn[1]}" href="{h["url"]}" target="_blank" rel="noopener">{btn[0]}</a></td></tr>')
 t_verdict = "\n".join(verdict_row(h) for h in H)
+RSRC = {"tabelog": "The ⭐ picks are the highest-rated everyday restaurants on Tabelog near the hotel's station (Tabelog scores run lower than Google's: 3.5+ is very good).",
+        "google": "The ⭐ picks are the highest-rated restaurants Google Maps shows."}.get(D.get("restaurant_source", "tabelog"), "")
 
 t_facts = group_rows(lambda h: "<tr>" + name_cell(h)
     + cell(h, "rating", "max", f'⭐ {h.get("rating")}', f'{h.get("review_count",0):,} reviews')
@@ -265,7 +267,7 @@ page = f"""<title>{esc(D.get("title","Japan Hotel Shortlist"))}</title>
     <p class="lede">Door to door from Google Maps. <strong>Total score</strong> adds up every train and taxi time. Lower is better, sorted best first.</p>
     <div class="table-wrap"><table><thead>{travel_head}</thead><tbody>{t_travel}</tbody></table></div></section>
   <section><h2>🍜 Restaurants & shops nearby</h2>
-    <p class="lede">The counts are places within 500 m (about a 6 min walk) from OpenStreetMap. The ⭐ picks are the highest-rated restaurants Google Maps shows. <strong>Total score</strong> = places to eat + shops. Sorted most first.</p>
+    <p class="lede">The counts are places within 500 m (about a 6 min walk) from OpenStreetMap. {RSRC} <strong>Total score</strong> = places to eat + shops. Sorted most first.</p>
     <div class="table-wrap"><table><thead>{hr("Hotel","🧮 Total score","🍽️ Places to eat","🛍️ Shops","🏪 Konbini","🏬 Big shopping","⭐ Top-rated restaurants")}</thead><tbody>{t_food}</tbody></table></div></section>
   <section><h2>🌡️ Heating & AC in winter</h2>
     <p class="lede">From English reviews of winter stays plus the lowest-scored reviews. ✅ Low = nobody said the room got too hot. ⚠️ Moderate = guests struggled to control the temperature.</p>
