@@ -20,6 +20,8 @@ be left out, and the page shows "—" for it.
   "arrival_label": "🚄 Hotel → Shin-Osaka (departure day)",   // optional column title (default "🚄 Arrival → hotel")
   "stations": [["Osaka", 34.7025, 135.4959], ...],  // optional, overrides preset (name, lat, lon); drawn in order
   "station_labels": ["Shibuya", "Tokyo"],           // optional; which stations get text labels
+  "places": [{"name": "Dotonbori", "lat": 34.6687, "lon": 135.5013}],   // optional; destinations, drawn as ◆ on the map
+  "basemap": { ... },                                // written by scripts/fetch_basemap.py (zoom + tile files)
   "hotels": [ { ...hotel... } ],
   "ruled_out": [ {"name": "Tokyo Prince Hotel (8.5)", "reason": "🌡️ ...short quote..."} ],
   "notes": ["Extra footnote lines"]

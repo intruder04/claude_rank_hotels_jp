@@ -110,7 +110,7 @@ rank changed.
 ## 4. Build and publish the page
 
 1. Put the data in `data.json` (format: `references/data-format.md`; real example: `assets/example_tokyo.json`) and the photos next to it.
-2. `python3 scripts/osm_counts.py data.json` fills in food and shop counts.
+2. `python3 scripts/osm_counts.py data.json` fills in food and shop counts. Add the traveler's destinations as `places` (name, lat, lon) so they show as ◆ on the map, then run `python3 scripts/fetch_basemap.py data.json`. It downloads ≤30 OpenStreetMap tiles for a real background map, which the page dims to gray, or inverts for dark theme, so it stays calm.
 3. `python3 scripts/build_page.py data.json out.html` builds one self-contained page with the photos embedded. It contains:
    - A ranked verdict table.
    - Key facts: rating, room, 🛁, total price, 🌡️ heat risk.

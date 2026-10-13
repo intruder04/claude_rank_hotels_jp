@@ -22,7 +22,7 @@ A single self-contained HTML page with:
 - A ranked list.
 - Key-facts, station, travel-time, food & shops, heating and review-score tables.
 - 🥇 Green highlighting for the best value in every column.
-- Building photos, a hand-drawn map and booking links with your dates.
+- Building photos, a map (a calm OpenStreetMap background with your hotels, train line and destinations) and booking links with your dates.
 
 See [`examples/tokyo-example.html`](examples/tokyo-example.html) (download it and open it in a browser). It was built from
 [`assets/example_tokyo.json`](japan-hotel-comparison/assets/example_tokyo.json) without photos.
@@ -60,7 +60,7 @@ Then just ask, for example:
 ### Requirements
 
 - A Claude environment with **browser access** (Claude in Chrome, the desktop app's built-in browser, or similar). The research happens on Booking.com and Google Maps.
-- **Python 3** for the two helper scripts: page builder and OpenStreetMap counter. They use only the standard library.
+- **Python 3** for the helper scripts: page builder, OpenStreetMap counter and map downloader. They use only the standard library.
 
 ## What's inside
 
@@ -74,6 +74,7 @@ japan-hotel-comparison/
 │   ├── build_page.py            # data.json → comparison page (HTML)
 │   ├── scoring.py               # overall score weights (edit WEIGHTS to change priorities)
 │   ├── osm_counts.py            # restaurants / shops / konbini within 500 m
+│   ├── fetch_basemap.py         # downloads a few OpenStreetMap tiles for the background map
 │   └── page.css
 └── assets/example_tokyo.json    # real example data (anonymized)
 ```

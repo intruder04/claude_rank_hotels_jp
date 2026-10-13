@@ -76,3 +76,11 @@ tr.top .rank { color: var(--win-fg); }
 .notes { color: var(--muted); font-size: .9rem; }
 .notes ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
 .map svg { max-height: 80vh; }
+/* background map: OpenStreetMap tiles calmed down to match the page theme */
+.bm { filter: grayscale(1) contrast(.9) brightness(1.05); opacity: .45; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .bm { filter: invert(1) grayscale(1) brightness(.85) contrast(.9); opacity: .4; } }
+:root[data-theme="dark"] .bm { filter: invert(1) grayscale(1) brightness(.85) contrast(.9); opacity: .4; }
+.m-place rect { fill: var(--warn); stroke: var(--surface); stroke-width: 2; }
+.m-place text { fill: var(--fg); font-family: var(--font-body); font-weight: 700; paint-order: stroke; stroke: var(--surface); stroke-width: 4px; }
+.m-attr { fill: var(--muted); font-family: var(--font-body); paint-order: stroke; stroke: var(--surface); stroke-width: 3px; }
+.m-stn-l { font-size: var(--fs, 13px); }

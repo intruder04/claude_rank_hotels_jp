@@ -171,29 +171,66 @@ PRESETS = {
  "tokyo_yamanote": [("Tokyo",35.6812,139.7671),("Yurakucho",35.6750,139.7630),("Shimbashi",35.6663,139.7583),("Hamamatsucho",35.6553,139.7570),("Tamachi",35.6457,139.7476),("Takanawa Gateway",35.6355,139.7407),("Shinagawa",35.6285,139.7388),("Osaki",35.6197,139.7286),("Gotanda",35.6262,139.7236),("Meguro",35.6340,139.7158),("Ebisu",35.6467,139.7101),("Shibuya",35.6580,139.7016),("Harajuku",35.6702,139.7027),("Yoyogi",35.6830,139.7020),("Shinjuku",35.6896,139.7006),("Shin-Okubo",35.7012,139.7000),("Takadanobaba",35.7127,139.7038),("Mejiro",35.7212,139.7065),("Ikebukuro",35.7295,139.7109),("Otsuka",35.7318,139.7286),("Sugamo",35.7334,139.7393),("Komagome",35.7365,139.7470),("Tabata",35.7381,139.7608),("Nishi-Nippori",35.7320,139.7668),("Nippori",35.7278,139.7710),("Uguisudani",35.7213,139.7781),("Ueno",35.7138,139.7773),("Okachimachi",35.7075,139.7748),("Akihabara",35.6984,139.7731),("Kanda",35.6918,139.7709)],
 }
 stations = [tuple(s) for s in D.get("stations", [])] or PRESETS.get(D.get("rail_preset", ""), [])
-def svgmap(pad=28, r=10):
-    pts = [(h["lat"], h["lon"]) for h in H if h.get("lat")] + [(a, b) for _, a, b in stations]
+def _merc(lat, lon, z):
+    n = 256 * 2 ** z
+    return ((lon + 180) / 360 * n,
+            (1 - math.log(math.tan(math.radians(lat)) + 1 / math.cos(math.radians(lat))) / math.pi) / 2 * n)
+
+def svgmap(pad=40, r=10):
+    places = D.get("places", [])
+    pts = ([(h["lat"], h["lon"]) for h in H if h.get("lat")] + [(a, b) for _, a, b in stations]
+           + [(p["lat"], p["lon"]) for p in places])
     if not pts: return ""
-    la0, la1 = min(p[0] for p in pts) - .004, max(p[0] for p in pts) + .004
-    lo0, lo1 = min(p[1] for p in pts) - .004, max(p[1] for p in pts) + .004
-    c = math.cos(math.radians((la0 + la1) / 2)); kmw = (lo1 - lo0) * 111.32 * c; kmh = (la1 - la0) * 110.57
-    ppk = 520 / max(kmw, kmh * 0.75)
-    P = lambda la, lo: ((lo - lo0) * 111.32 * c * ppk + pad, (la1 - la) * 110.57 * ppk + pad)
-    W, Hh = kmw * ppk + 2 * pad, kmh * ppk + 2 * pad
-    o = [f'<svg viewBox="0 0 {W:.0f} {Hh:.0f}" role="img" aria-label="Hotel locations" xmlns="http://www.w3.org/2000/svg"><rect width="{W:.0f}" height="{Hh:.0f}" class="m-bg"/>']
+    bm = D.get("basemap")
+    if bm:   # Web Mercator pixels at the tile zoom, so markers sit exactly on the map
+        z = bm["z"]; XY = [_merc(a, b, z) for a, b in pts]
+        x0 = min(p[0] for p in XY) - pad; x1 = max(p[0] for p in XY) + pad
+        y0 = min(p[1] for p in XY) - pad; y1 = max(p[1] for p in XY) + pad
+        tx0 = min(t["x"] for t in bm["tiles"]) * 256; ty0 = min(t["y"] for t in bm["tiles"]) * 256
+        tx1 = (max(t["x"] for t in bm["tiles"]) + 1) * 256; ty1 = (max(t["y"] for t in bm["tiles"]) + 1) * 256
+        x0, y0, x1, y1 = max(x0, tx0), max(y0, ty0), min(x1, tx1), min(y1, ty1)
+        if (x1 - x0) < 520:   # widen narrow areas so the map isn't a thin strip
+            cx = (x0 + x1) / 2; x0, x1 = max(tx0, cx - 260), min(tx1, cx + 260)
+        W, Hh = x1 - x0, y1 - y0
+        P = lambda la, lo: (_merc(la, lo, z)[0] - x0, _merc(la, lo, z)[1] - y0)
+        k = max(W, Hh) / 700; r = 10 * k; fs = 13 * k; sw = 4 * k
+    else:
+        la0, la1 = min(p[0] for p in pts) - .004, max(p[0] for p in pts) + .004
+        lo0, lo1 = min(p[1] for p in pts) - .004, max(p[1] for p in pts) + .004
+        c = math.cos(math.radians((la0 + la1) / 2)); kmw = (lo1 - lo0) * 111.32 * c; kmh = (la1 - la0) * 110.57
+        ppk = 520 / max(kmw, kmh * 0.75)
+        P = lambda la, lo: ((lo - lo0) * 111.32 * c * ppk + pad, (la1 - la) * 110.57 * ppk + pad)
+        W, Hh = kmw * ppk + 2 * pad, kmh * ppk + 2 * pad
+        k = 1; fs = 13; sw = 4
+    o = [f'<svg viewBox="0 0 {W:.0f} {Hh:.0f}" role="img" aria-label="Map of the hotels" xmlns="http://www.w3.org/2000/svg" style="--fs:{fs:.1f}px">'
+         f'<rect width="{W:.0f}" height="{Hh:.0f}" class="m-bg"/>']
+    if bm:
+        o.append('<g class="bm">')
+        for t in bm["tiles"]:
+            f = BASE / t["img"]
+            if not f.exists(): continue
+            href = "data:image/png;base64," + base64.b64encode(f.read_bytes()).decode()
+            o.append(f'<image href="{href}" x="{t["x"]*256 - x0:.1f}" y="{t["y"]*256 - y0:.1f}" width="256.5" height="256.5"/>')
+        o.append('</g>')
     if stations:
         loop = D.get("rail_preset", "").endswith(("yamanote", "loop"))
         tagname = "polygon" if loop else "polyline"
-        o.append(f'<{tagname} class="m-line" points="' + " ".join(f"{P(a,b)[0]:.1f},{P(a,b)[1]:.1f}" for _, a, b in stations) + '"/>')
+        o.append(f'<{tagname} class="m-line" style="stroke-width:{sw:.1f}" points="' + " ".join(f"{P(a,b)[0]:.1f},{P(a,b)[1]:.1f}" for _, a, b in stations) + '"/>')
         labels = set(D.get("station_labels", [d for d in dests]))
         for n, a, b in stations:
             x, y = P(a, b); big = n in labels
-            o.append(f'<circle class="m-stn{" big" if big else ""}" cx="{x:.1f}" cy="{y:.1f}" r="{5 if big else 3}"/>')
-            if big: o.append(f'<text class="m-stn-l" x="{x+9:.1f}" y="{y+4:.1f}">{esc(n)}</text>')
+            o.append(f'<circle class="m-stn{" big" if big else ""}" cx="{x:.1f}" cy="{y:.1f}" r="{(5 if big else 3)*k:.1f}"/>')
+            if big: o.append(f'<text class="m-stn-l" x="{x+9*k:.1f}" y="{y+4*k:.1f}" font-size="{fs:.1f}">{esc(n)}</text>')
+    for p in places:   # destinations the traveler cares about
+        x, y = P(p["lat"], p["lon"])
+        o.append(f'<g class="m-place"><rect x="{x-7*k:.1f}" y="{y-7*k:.1f}" width="{14*k:.1f}" height="{14*k:.1f}" rx="{3*k:.1f}" transform="rotate(45 {x:.1f} {y:.1f})"/>'
+                 f'<text x="{x+12*k:.1f}" y="{y+4*k:.1f}" font-size="{fs:.1f}">{esc(p["name"])}</text></g>')
     for h in H:
         if not h.get("lat"): continue
         x, y = P(h["lat"], h["lon"])
-        o.append(f'<g class="m-h {h["status"]}"><circle cx="{x:.1f}" cy="{y:.1f}" r="{r}"/><text x="{x:.1f}" y="{y+r*0.36:.1f}" text-anchor="middle" font-size="{r*1.05:.0f}">{h["tag"]}</text></g>')
+        o.append(f'<g class="m-h {h["status"]}"><circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.1f}"/><text x="{x:.1f}" y="{y+r*0.36:.1f}" text-anchor="middle" font-size="{r*1.05:.1f}">{h["tag"]}</text></g>')
+    if bm:
+        o.append(f'<text class="m-attr" x="{W-6*k:.1f}" y="{Hh-6*k:.1f}" text-anchor="end" font-size="{10*k:.1f}">{esc(bm.get("attribution",""))}</text>')
     o.append("</svg>"); return "".join(o)
 mapsvg = svgmap()
 legend = "".join(f'<li><span class="dot {h["status"]}">{h["tag"]}</span>{esc(h["name"])}</li>' for h in H)
@@ -235,7 +272,7 @@ page = f"""<title>{esc(D.get("title","Japan Hotel Shortlist"))}</title>
   <section><h2>⭐ Review scores</h2>
     <p class="lede">Booking.com category scores. <strong>Total score</strong> = average of cleanliness, comfort, location and value. Sorted best first.</p>
     <div class="table-wrap"><table><thead>{hr("Hotel","📊 Total score","🧼 Clean","😴 Comfort","📍 Location","💵 Value","Liked / disliked")}</thead><tbody>{t_scores}</tbody></table></div></section>
-  {"<section><h2>🗺️ Where they are</h2><figure class='map'>" + mapsvg + "<figcaption>Drawn from coordinates: hotel positions from Google Maps, station positions approximate.</figcaption></figure><ul class='legend'>" + legend + "</ul></section>" if mapsvg else ""}
+  {"<section><h2>🗺️ Where they are</h2><figure class='map'>" + mapsvg + "<figcaption>" + ("Map © OpenStreetMap contributors. " if D.get("basemap") else "") + "Hotel positions from Google Maps; ◆ = places you'll visit; station positions approximate.</figcaption></figure><ul class='legend'>" + legend + "</ul></section>" if mapsvg else ""}
   {"<section><h2>❌ Checked and ruled out</h2><div class='table-wrap'><table><thead>" + hr("Hotel","Why it's out") + "</thead><tbody>" + t_out + "</tbody></table></div></section>" if t_out else ""}
   <section class="notes"><h3>Notes</h3><ul>
     <li>Booking.com prices exclude Japan's 10% consumption tax (added here) and the local accommodation tax paid at the hotel. Prices change.</li>
