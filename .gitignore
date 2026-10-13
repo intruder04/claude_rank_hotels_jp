@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.DS_Store
+# your own trip data and downloaded hotel photos stay local
+data.json
+photos/
+out.html
