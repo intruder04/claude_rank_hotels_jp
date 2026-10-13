@@ -134,17 +134,38 @@ has agreed to downloads.
 
 ## 5. Google Maps times
 
+**Walking** (time doesn't matter), also gives both ends' coordinates:
 ```
-https://www.google.com/maps/dir/?api=1&origin=<Hotel name>&destination=<Place>&travelmode=walking|transit|driving&hl=en
+https://www.google.com/maps/dir/?api=1&origin=<Hotel name>&destination=<Place>&travelmode=walking&hl=en
 ```
-After ~3 s:
+After ~5 s:
 ```js
-const t=document.body.innerText; const i=t.indexOf('Copy link'); document.title.split(' - ')[0]+' :: '+t.slice(i+9,i+120).replace(/\s+/g,' ')
+const t=document.body.innerText; const i=t.indexOf('Copy link'); document.title.split(' - ')[0]+' :: '+t.slice(i+9,i+40).replace(/\s+/g,' ')+' :: '+location.href.match(/!1d[\d.]+!2d[\d.]+/g)
 ```
-The first number is the fastest route: walking `7 min 500 m`, transit `23 min … Yamanote
-Line … ¥210`, driving `18 min 6.5 km` (use that as the taxi time). Coordinates of both
-ends are in the URL once it has settled (wait ~5 s):
-`location.href.match(/!1d[\d.]+!2d[\d.]+/g)` → `!1d<lon>!2d<lat>`.
+→ `7 min 500 m` and `!1d<lon>!2d<lat>` for each end.
+
+**Train and taxi: always depart at 10:00 Japan time on a weekday** in the trip's month,
+never "leave now". "Now" is the researcher's clock, which can be late night in Japan
+(no trains, empty roads) and makes hotels measured at different times incomparable.
+Use coordinates (`lat,lon`) for both ends:
+```
+https://www.google.com/maps/dir/<lat,lon>/<lat,lon>/data=!4m6!4m5!2m3!6e0!7e2!8j<T>!3e3?hl=en   (transit)
+... same with !3e0 at the end                                                       (driving = taxi)
+```
+`<T>` is the clock time at the destination written as if it were UTC, so 10:00 in Japan
+is `calendar.timegm((2026,12,15,10,0,0))` = `1797328800` (a Tuesday). Don't convert from
+JST to UTC, and don't use the researcher's time zone. Check it once: the transit list
+must show departures like `10:01 AM (Tuesday)`.
+```js
+// transit: fastest option in the list
+await new Promise(r=>setTimeout(r,4000)); Math.min(...[...document.body.innerText.matchAll(/(\d+) min\s+\d{1,2}:\d{2}\s?[AP]M/g)].map(m=>+m[1]))
+// driving: "typically 14–22 min" → use the midpoint as the taxi time
+await new Promise(r=>setTimeout(r,3500)); (document.body.innerText.match(/typically[^\n]{0,20}/)||[''])[0]
+```
+If walking beats the train (short hops), record the walk and mark it `"walk"` in
+`train_note`. The browser batch tool takes at most 25 steps, so run ~12 routes per batch.
+If Google shows "You're seeing a limited view of Google Maps", it has throttled
+searches: directions still work, but restaurant lists come back with 1 result.
 
 Large stations have one map point, often far from the gate the hotel is near. If a
 walk looks long, route to a landmark beside the right gate (e.g. a mall next to a
